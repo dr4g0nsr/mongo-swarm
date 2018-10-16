@@ -1,18 +1,18 @@
 # mongo-swarm
 
-[![Build Status](https://travis-ci.org/stefanprodan/mongo-swarm.svg?branch=master)](https://travis-ci.org/stefanprodan/mongo-swarm)
+[![Build Status](https://travis-ci.org/dr4g0nsr/mongo-swarm.svg?branch=master)](https://travis-ci.org/dr4g0nsr/mongo-swarm)
 [![Docker Image](https://images.microbadger.com/badges/image/stefanprodan/mongo-bootstrap.svg)](https://hub.docker.com/r/stefanprodan/mongo-bootstrap)
 
 Mongo-swarm is a POC project that automates the bootstrapping process of a MongoDB cluster for production use.
-With a single command you can deploy the _Mongos_, _Config_ and _Data_ replica sets onto Docker Swarm, 
-forming a high-available MongoDB cluster capable of surviving multiple nodes failure without service interruption. 
+With a single command you can deploy the _Mongos_, _Config_ and _Data_ replica sets onto Docker Swarm,
+forming a high-available MongoDB cluster capable of surviving multiple nodes failure without service interruption.
 The Docker stack is composed of two MongoDB replica sets, two Mongos instances and the
-mongo-bootstrap service. Mongo-bootstrap is written in Go and handles the replication, sharding and 
+mongo-bootstrap service. Mongo-bootstrap is written in Go and handles the replication, sharding and
 routing configuration.
 
 ![Overview](https://github.com/stefanprodan/mongo-swarm/blob/master/diagrams/mongo-swarm.png)
 
-### Prerequisites 
+### Prerequisites
 
 In oder to deploy the MongoDB stack you should have a Docker Swarm cluster made out of eleven nodes:
 
@@ -21,32 +21,15 @@ In oder to deploy the MongoDB stack you should have a Docker Swarm cluster made 
 * 3 Mongo config nodes (prod-mongocfg-1, prod-mongocfg-2, prod-mongocfg-3)
 * 2 Mongo router nodes (prod-mongos-1, prod-mongos-2)
 
-You can name your Swarm nodes however you want, 
-the bootstrap process uses placement restrictions based on the `mongo.role` label. 
+You can name your Swarm nodes however you want,
+the bootstrap process uses placement restrictions based on the `mongo.role` label.
 For the bootstrapping to take place you need to apply the following labels:
 
-**Mongo data nodes**
+**Mongo nodes config**
 
-```bash
-docker node update --label-add mongo.role=data1 prod-mongodata-1
-docker node update --label-add mongo.role=data2 prod-mongodata-2
-docker node update --label-add mongo.role=data3 prod-mongodata-3
-```
-
-**Mongo config nodes**
-
-```bash
-docker node update --label-add mongo.role=cfg1 prod-mongocfg-1
-docker node update --label-add mongo.role=cfg2 prod-mongocfg-2
-docker node update --label-add mongo.role=cfg3 prod-mongocfg-3
-```
-
-**Mongos nodes**
-
-```bash
-docker node update --label-add mongo.role=mongos1 prod-mongos-1
-docker node update --label-add mongo.role=mongos2 prod-mongos-2
-```
+System is configured for three nodes, by changing bootstrap.sh you can set services
+on any amount of nodes by attaching labels to hosts.
+I used node1..3 as you would do in docker play.
 
 ### Deploy
 
@@ -70,16 +53,16 @@ docker stack deploy -c swarm-compose.yml mongo
 
 **Networking**
 
-The config and data replica sets are isolated from the rest of the swarm in the `mongo` overlay network. 
-The routers, Mongos1 and Mongos2 are connected to the `mongo` network and to the `mongos` network. 
-You should attach application containers to the `mongos` network in order to communicate with 
+The config and data replica sets are isolated from the rest of the swarm in the `mongo` overlay network.
+The routers, Mongos1 and Mongos2 are connected to the `mongo` network and to the `mongos` network.
+You should attach application containers to the `mongos` network in order to communicate with
 the MongoDB Cluster.
 
-**Persistent storage** 
+**Persistent storage**
 
-At first run, each data and config node will be provisioned with a named Docker volume. This 
-ensures the MongoDB databases will not be purged if you restart or update the MongoDB cluster. Even if you 
-remove the whole stack the volumes will remain on the disk. If you want to delete the MongoDB data and config 
+At first run, each data and config node will be provisioned with a named Docker volume. This
+ensures the MongoDB databases will not be purged if you restart or update the MongoDB cluster. Even if you
+remove the whole stack the volumes will remain on the disk. If you want to delete the MongoDB data and config
 you have to run `docker volume purge` on each Swarm node.
 
 **Bootstrapping**
@@ -123,21 +106,21 @@ msg="mongos2:27017 shard added"
 
 **High availability**
 
-A MongoDB cluster provisioned with mongo-swarm can survive node failures and will 
+A MongoDB cluster provisioned with mongo-swarm can survive node failures and will
 start an automatic failover if:
 
 * the primary data node goes down
 * the primary config node goes down
 * one of the mongos nodes goes down
 
-When the primary data or config node goes down, the Mongos instances will detect the new 
-primary node and will reroute all the traffic to it. If a Mongos node goes down and your applications are 
-configured to use both Mongos nodes, the Mongo driver will switch to the online Mongos instance. When you 
+When the primary data or config node goes down, the Mongos instances will detect the new
+primary node and will reroute all the traffic to it. If a Mongos node goes down and your applications are
+configured to use both Mongos nodes, the Mongo driver will switch to the online Mongos instance. When you
 recover a failed data or config node, this node will rejoin the replica set and resync if the oplog size allows it.
 
-If you want the cluster to outstand more than one node failure per replica set, you can 
-horizontally scale up the data and config sets by modifying the swarm-compose.yml file. 
-Always have an odd number of nodes per replica set to avoid split brain situations. 
+If you want the cluster to outstand more than one node failure per replica set, you can
+horizontally scale up the data and config sets by modifying the swarm-compose.yml file.
+Always have an odd number of nodes per replica set to avoid split brain situations.
 
 You can test the automatic failover by killing or removing the primary data and config nodes:
 
@@ -146,9 +129,9 @@ root@prod-data1-1:~# docker kill mongo_data1.1....
 root@prod-cfg1-1:~# docker rm -f mongo_cfg1.1....
 ```
 
-When you bring down the two instances Docker Swarm will start new containers to replace the killed ones. 
-The data and config replica sets will choose a new leader and the newly started instances will join the 
-cluster as followers. 
+When you bring down the two instances Docker Swarm will start new containers to replace the killed ones.
+The data and config replica sets will choose a new leader and the newly started instances will join the
+cluster as followers.
 
 You can check the cluster state by doing an HTTP GET on mongo-bootstrap port 9090.
 
@@ -161,7 +144,7 @@ docker run --rm --network mongo tutum/curl:alpine curl bootstrap:9090
 To test the Mongos connectivity you can run an interactive mongo container attached to the mongos network:
 
 ```bash
-$ docker run --network mongos -it mongo:3.4 mongo mongos1:27017 
+$ docker run --network mongos -it mongo:3.4 mongo mongos1:27017
 
 mongos> use test
 switched to db test
@@ -173,7 +156,7 @@ mongos> db.demo.find()
 { "_id" : ObjectId("59a6fa01e33a5cec9872664f"), "text" : "demo" }
 ```
 
-The Mongo clients should connect to all Mongos nodes that are running on the mongos overlay network. 
+The Mongo clients should connect to all Mongos nodes that are running on the mongos overlay network.
 Here is an example with the mgo golang MongoDB driver:
 
 ```go
@@ -182,13 +165,13 @@ session, err := mgo.Dial("mongodb://mongos1:27017,mongos2:27017/")
 
 **Load testing**
 
-You can run load tests for the MongoDB cluster using the loadtest app. 
+You can run load tests for the MongoDB cluster using the loadtest app.
 
 Start 3 loadtest instances on the mongos network:
 
 ```bash
 docker stack deploy -c swarm-loadtest.yml lt
-``` 
+```
 
 The loadtest app is a Go web service that connects to the two Mongos nodes and does an insert and select:
 
@@ -229,18 +212,18 @@ http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 })
 ```
 
-The loadtest service is exposed on the internet on port 9999. 
+The loadtest service is exposed on the internet on port 9999.
 You can run the load test using rakyll/hey or Apache bench.
 
 ```bash
 #install hey
 go get -u github.com/rakyll/hey
 
-#do 10K requests 
+#do 10K requests
 hey -n 10000 -c 100 -m GET http://<SWARM-PUBLIC-IP>:9999/
 ```
 
-While running the load test you could kill a _Mongos_, _Data_ and _Config_ node and see 
+While running the load test you could kill a _Mongos_, _Data_ and _Config_ node and see
 what's the failover impact.
 
 Running the load test with a single loadtest instance:
@@ -283,33 +266,33 @@ Response time histogram:
   0.998 [396]	|∎∎∎
 ```
 
-Scaling up the application from one instance to three instances made the load test 23 seconds faster and the 
+Scaling up the application from one instance to three instances made the load test 23 seconds faster and the
 requests per second rate went from 171 to 281.
 
 **Monitoring with Weave Scope**
 
-Monitoring the load test with Weave Cloud shows how the traffic is being routed by the Docker Swarm 
+Monitoring the load test with Weave Cloud shows how the traffic is being routed by the Docker Swarm
 load balancer and by the Mongos instances:
 
 ![Traffic](https://github.com/stefanprodan/mongo-swarm/blob/master/diagrams/weave-scope.png)
 
-Weave Scope is a great tool for visualising network traffic between containers and/or Docker Swarm nodes. 
+Weave Scope is a great tool for visualising network traffic between containers and/or Docker Swarm nodes.
 Besides traffic you can also monitor system load, CPU and memory usage. Recording multiple
 load test sessions with Scope you can determine what's the maximum load your infrastructure can take without
-a performance degradation. 
+a performance degradation.
 
-Monitoring a Docker Swarm cluster with Weave Cloud is as simple as deploying a Scope container on each Swarm node. 
+Monitoring a Docker Swarm cluster with Weave Cloud is as simple as deploying a Scope container on each Swarm node.
 More info on installing Weave Scope with Docker can be found [here](https://www.weave.works/docs/scope/latest/installing/).
 
 
 
 **Local deployment**
 
-If you want to run the MongoDB cluster on a single Docker machine without Docker Swarm mode you can use 
+If you want to run the MongoDB cluster on a single Docker machine without Docker Swarm mode you can use
 the local compose file. I use it for debugging on Docker for Mac.
 
 ```bash
 $ docker-compose -f local-compose.yml up -d
-``` 
+```
 
-This will start all the MongoDB services and mongo-bootstrap on the bridge network without persistent storage. 
+This will start all the MongoDB services and mongo-bootstrap on the bridge network without persistent storage.
