@@ -78,6 +78,15 @@ services:
     networks:
       - net
 
+  mongos3:
+    image: mongo:3.4
+    container_name: mongos3
+    command: mongos --configdb cfgrs/cfg1:27017,cfg2:27017,cfg3:27017
+    expose:
+      - 27017
+    networks:
+      - net
+
   bootstrap:
     image: stefanprodan/mongo-bootstrap:latest
     container_name: mongo-bootstrap

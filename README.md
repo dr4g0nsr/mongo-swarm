@@ -36,7 +36,7 @@ I used node1..3 as you would do in docker play.
 Clone this repository and run the bootstrap script on a Docker Swarm manager node:
 
 ```bash
-$ git clone https://github.com/stefanprodan/mongo-swarm
+$ git clone https://github.com/dr4g0nsr/mongo-swarm
 $ cd mongo-swarm
 
 $ ./bootstrap.sh

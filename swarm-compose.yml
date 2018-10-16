@@ -101,7 +101,7 @@ services:
     networks:
       - mongo
       - mongos
-    command: mongos --configdb cfgrs/cfg1:27017,cfg2:27017,cfg3:27017
+    command: mongos --configdb cfgrs/cfg1:27017,cfg2:27017,cfg3:27017 --bind_ip_all
     deploy:
       mode: replicated
       replicas: 1
@@ -114,7 +114,7 @@ services:
     networks:
       - mongo
       - mongos
-    command: mongos --configdb cfgrs/cfg1:27017,cfg2:27017,cfg3:27017
+    command: mongos --configdb cfgrs/cfg1:27017,cfg2:27017,cfg3:27017 --bind_ip_all
     deploy:
       mode: replicated
       replicas: 1
@@ -127,7 +127,7 @@ services:
     networks:
       - mongo
       - mongos
-    command: mongos --configdb cfgrs/cfg1:27017,cfg2:27017,cfg3:27017
+    command: mongos --configdb cfgrs/cfg1:27017,cfg2:27017,cfg3:27017 --bind_ip_all
     deploy:
       mode: replicated
       replicas: 1
